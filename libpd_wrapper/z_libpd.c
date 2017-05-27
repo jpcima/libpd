@@ -8,7 +8,9 @@
  *
  */
 
-#include <signal.h>
+#ifdef LIBPD_SIGFPE
+# include <signal.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -63,7 +65,9 @@ static int initialized = 0;
 int libpd_init(void) {
   if (initialized) return -1; // only allow init once (for now)
   initialized = 1;
+#ifdef LIBPD_SIGFPE
   signal(SIGFPE, SIG_IGN);
+#endif
   libpd_start_message(32); // allocate array for message assembly
   sys_printhook = (t_printhook) libpd_printhook;
   // are all these settings necessary?

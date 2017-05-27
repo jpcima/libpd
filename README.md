@@ -76,6 +76,7 @@ Makefile options allow for conditional compilation of libpd util and pd extra ex
   - **EXTRA=true**, compiles `pure-data/extra` externals which are then inited in libpd_init()
   - **DEBUG=true**, compiles libpd with -Wall & no optimizations
   - **LOCALE=true**, set the number format to the default "C" locale\*
+  - **SIGFPE=true**, install a handler for the SIGFPE signal
   - **PORTAUDIO=true**, compiles libpd with portaudio support (currently JAVA jni only)
 
 For example, to build libpd with both util and extra:

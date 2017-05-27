@@ -127,6 +127,11 @@ ifeq ($(SETLOCALE), true)
 	LOCALE_CFLAGS = -DLIBPD_SETLOCALE
 endif
 
+SIGFPE_CFLAGS =
+ifeq ($(SIGFPE), true)
+	SIGFPE_CFLAGS = -DLIBPD_SIGFPE
+endif
+
 # portaudio backend?
 ifeq ($(PORTAUDIO), true)
 	JNI_SOUND = jni/z_jni_pa.c
@@ -161,7 +166,7 @@ PDJAVA_JAR = libs/libpd.jar
 
 CFLAGS = -DPD -DPDINSTANCE -DHAVE_UNISTD_H -DUSEAPI_DUMMY -I./pure-data/src \
          -I./libpd_wrapper -I./libpd_wrapper/util $(PLATFORM_CFLAGS) \
-         $(OPT_CFLAGS) $(EXTRA_CFLAGS) $(LOCALE_CFLAGS) $(ADDITIONAL_CFLAGS)
+         $(OPT_CFLAGS) $(EXTRA_CFLAGS) $(LOCALE_CFLAGS) $(SIGFPE_CFLAGS) $(ADDITIONAL_CFLAGS)
 
 CXXFLAGS = $(CFLAGS) $(CPP_FLAGS)
 
