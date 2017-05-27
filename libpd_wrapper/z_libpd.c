@@ -123,6 +123,10 @@ void libpd_term(void) {
 
   if (!initialized) return;
 
+  x = &pd_maininstance;  /* terminate initialized systems */
+  pd_setinstance(x);
+  pd_term_systems();
+
   while (pd_ninstances > 1) {   /* free instances other than main */
     x = pd_instances[0];
     if (x == &pd_maininstance)
