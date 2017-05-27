@@ -15,6 +15,7 @@ void pdnoteon(int ch, int pitch, int vel) {
 }
 
 int main(int argc, char **argv) {
+  libpd_init();
   t_pdinstance *pd1 = pdinstance_new(), *pd2 = pdinstance_new();
   if (argc < 3) {
     fprintf(stderr, "usage: %s file folder\n", argv[0]);
@@ -25,10 +26,7 @@ int main(int argc, char **argv) {
     // maybe these two calls should be available per-instance somehow:
   libpd_set_printhook(pdprint);   
   libpd_set_noteonhook(pdnoteon);
-    /* set a "current" instance before libpd_init() or else Pd will make
-    an unnecessary third "default" instance. */
   pd_setinstance(pd1);
-  libpd_init();
     /* ... here we'd sure like to be able to have number of channels be
     per-instance.  The sample rate is still global within Pd but we might
     also consider relaxing that restrction. */

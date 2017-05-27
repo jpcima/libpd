@@ -68,4 +68,6 @@ void glob_midi_properties(t_pd *dummy, t_floatarg flongform) {}
 void glob_midi_dialog(t_pd *dummy, t_symbol *s, int argc, t_atom *argv) {}
 int sys_mididevnametonumber(int output, const char *name) { return 0; }
 void sys_mididevnumbertoname(int output, int devno, char *name, int namesize) {}
-
+#define API_DEFAULTMIDI 0
+int sys_midiapi = API_DEFAULTMIDI;
+void sys_set_midi_api(int which) { sys_midiapi = which; }

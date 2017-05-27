@@ -34,10 +34,10 @@ else
     PDNATIVE_PLATFORM = linux
     PDNATIVE_ARCH = $(shell $(CC) -dumpmachine | sed -e 's,-.*,,' -e 's,i[3456]86,x86,' -e 's,amd64,x86_64,')
     JAVA_HOME ?= /usr/lib/jvm/default-java
-    PLATFORM_CFLAGS = -DHAVE_LIBDL -Wno-int-to-pointer-cast \
+    PLATFORM_CFLAGS = -DHAVE_LIBDL -Wno-int-to-pointer-cast -g \
       -Wno-pointer-to-int-cast -fPIC -I"$(JAVA_HOME)/include" \
       -I"$(JAVA_HOME)/include/linux"
-    LDFLAGS = -shared -ldl -Wl,-Bsymbolic
+    LDFLAGS = -shared -ldl -Wl,-Bsymbolic -Wl,--no-undefined
     CSHARP_LDFLAGS = $(LDFLAGS)
     CPP_LDFLAGS = $(LDFLAGS)
     JAVA_LDFLAGS = $(LDFLAGS)
@@ -159,7 +159,7 @@ PDJAVA_DIR = $(PDJAVA_BUILD)/org/puredata/core/natives/$(PDNATIVE_PLATFORM)/$(PD
 PDJAVA_NATIVE = $(PDJAVA_DIR)/$(SOLIB_PREFIX)pdnative.$(PDNATIVE_SOLIB_EXT)
 PDJAVA_JAR = libs/libpd.jar
 
-CFLAGS = -DPD -DHAVE_UNISTD_H -DUSEAPI_DUMMY -I./pure-data/src \
+CFLAGS = -DPD -DPDINSTANCE -DHAVE_UNISTD_H -DUSEAPI_DUMMY -I./pure-data/src \
          -I./libpd_wrapper -I./libpd_wrapper/util $(PLATFORM_CFLAGS) \
          $(OPT_CFLAGS) $(EXTRA_CFLAGS) $(LOCALE_CFLAGS) $(ADDITIONAL_CFLAGS)
 

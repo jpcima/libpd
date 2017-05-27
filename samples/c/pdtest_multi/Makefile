@@ -21,7 +21,7 @@ LIBPD = $(LIBPD_DIR)/libs/libpd.$(SOLIB_EXT)
 SRC_FILES = pdtest_multi.c
 TARGET = pdtest_multi
 
-CFLAGS = -I../../../pure-data/src -I../../../libpd_wrapper -O3
+CFLAGS = -DPDINSTANCE -I../../../pure-data/src -I../../../libpd_wrapper -O3
 
 .PHONY: clean clobber
 

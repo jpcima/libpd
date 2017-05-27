@@ -16,6 +16,10 @@ extern "C"
 {
 #endif
 
+#ifndef PDINSTANCE
+# error libpd requires PDINSTANCE to be defined
+#endif
+
 #include "m_pd.h"
 
 EXTERN int libpd_init(void);

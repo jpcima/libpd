@@ -65,10 +65,7 @@ int libpd_init(void) {
   signal(SIGFPE, SIG_IGN);
   libpd_start_message(32); // allocate array for message assembly
   sys_printhook = (t_printhook) libpd_printhook;
-  sys_soundin = NULL;
-  sys_soundout = NULL;
   // are all these settings necessary?
-  sys_schedblocksize = DEFDACBLKSIZE;
   sys_externalschedlib = 0;
   sys_printtostderr = 0;
   sys_usestdpath = 0; // don't use pd_extrapath, only sys_searchpath
@@ -79,15 +76,14 @@ int libpd_init(void) {
   sys_hipriority = 0;
   sys_nmidiin = 0;
   sys_nmidiout = 0;
-  sys_init_fdpoll();
 #ifdef HAVE_SCHED_TICK_ARG
   sys_time = 0;
 #endif
   pd_init();
+  sys_init_fdpoll();
   libpdreceive_setup();
   sys_set_audio_api(API_DUMMY);
-  sys_searchpath = NULL;
-  sys_startgui(NULL);
+  // sys_startgui(NULL);
 #ifdef LIBPD_EXTRA
   bob_tilde_setup();
   bonk_tilde_setup();
@@ -106,12 +102,12 @@ int libpd_init(void) {
 }
 
 void libpd_clear_search_path(void) {
-  namelist_free(sys_searchpath);
-  sys_searchpath = NULL;
+  namelist_free(STUFF->st_searchpath);
+  STUFF->st_searchpath = NULL;
 }
 
 void libpd_add_to_search_path(const char *s) {
-  sys_searchpath = namelist_append(sys_searchpath, s, 0);
+  STUFF->st_searchpath = namelist_append(STUFF->st_searchpath, s, 0);
 }
 
 void *libpd_openfile(const char *basename, const char *dirname) {
@@ -143,17 +139,21 @@ int libpd_init_audio(int inChans, int outChans, int sampleRate) {
 }
 
 int libpd_process_raw(const float *inBuffer, float *outBuffer) {
-  size_t n_in = sys_inchannels * DEFDACBLKSIZE;
-  size_t n_out = sys_outchannels * DEFDACBLKSIZE;
+  t_sample *soundin = get_sys_soundin();
+  t_sample *soundout = get_sys_soundout();
+  int inchannels = sys_get_inchannels();
+  int outchannels = sys_get_outchannels();
+  size_t n_in = inchannels * DEFDACBLKSIZE;
+  size_t n_out = outchannels * DEFDACBLKSIZE;
   t_sample *p;
   size_t i;
   sys_microsleep(0);
-  for (p = sys_soundin, i = 0; i < n_in; i++) {
+  for (p = soundin, i = 0; i < n_in; i++) {
     *p++ = *inBuffer++;
   }
-  memset(sys_soundout, 0, n_out * sizeof(t_sample));
+  memset(soundout, 0, n_out * sizeof(t_sample));
   SCHED_TICK(sys_time + sys_time_per_dsp_tick);
-  for (p = sys_soundout, i = 0; i < n_out; i++) {
+  for (p = soundout, i = 0; i < n_out; i++) {
     *outBuffer++ = *p++;
   }
   return 0;
@@ -163,19 +163,23 @@ static const t_sample sample_to_short = SHRT_MAX,
                    short_to_sample = 1.0 / (t_sample) SHRT_MAX;
 
 #define PROCESS(_x, _y) \
+  t_sample *soundin = get_sys_soundin(); \
+  t_sample *soundout = get_sys_soundout(); \
+  int inchannels = sys_get_inchannels(); \
+  int outchannels = sys_get_outchannels(); \
   int i, j, k; \
   t_sample *p0, *p1; \
   sys_microsleep(0); \
   for (i = 0; i < ticks; i++) { \
-    for (j = 0, p0 = sys_soundin; j < DEFDACBLKSIZE; j++, p0++) { \
-      for (k = 0, p1 = p0; k < sys_inchannels; k++, p1 += DEFDACBLKSIZE) { \
+    for (j = 0, p0 = soundin; j < DEFDACBLKSIZE; j++, p0++) { \
+      for (k = 0, p1 = p0; k < inchannels; k++, p1 += DEFDACBLKSIZE) { \
         *p1 = *inBuffer++ _x; \
       } \
     } \
-    memset(sys_soundout, 0, sys_outchannels*DEFDACBLKSIZE*sizeof(t_sample)); \
+    memset(soundout, 0, outchannels*DEFDACBLKSIZE*sizeof(t_sample)); \
     SCHED_TICK(sys_time + sys_time_per_dsp_tick); \
-    for (j = 0, p0 = sys_soundout; j < DEFDACBLKSIZE; j++, p0++) { \
-      for (k = 0, p1 = p0; k < sys_outchannels; k++, p1 += DEFDACBLKSIZE) { \
+    for (j = 0, p0 = soundout; j < DEFDACBLKSIZE; j++, p0++) { \
+      for (k = 0, p1 = p0; k < outchannels; k++, p1 += DEFDACBLKSIZE) { \
         *outBuffer++ = *p1 _y; \
       } \
     } \
