@@ -98,5 +98,6 @@ int main(int argc, char **argv) {
     }
   }
 
+  libpd_term();
   return 0;
 }

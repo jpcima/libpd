@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
     // use outbuf here
   }
 
+  libpd_term();
   return 0;
 }
 

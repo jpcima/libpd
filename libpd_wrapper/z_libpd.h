@@ -23,6 +23,7 @@ extern "C"
 #include "m_pd.h"
 
 EXTERN int libpd_init(void);
+EXTERN void libpd_term(void);
 EXTERN void libpd_clear_search_path(void);
 EXTERN void libpd_add_to_search_path(const char *sym);
 

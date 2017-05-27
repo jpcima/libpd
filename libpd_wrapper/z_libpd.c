@@ -57,9 +57,10 @@ static void *get_object(const char *s) {
   return x;
 }
 
+static int initialized = 0;
+
 /* this is called instead of sys_main() to start things */
 int libpd_init(void) {
-  static int initialized = 0;
   if (initialized) return -1; // only allow init once (for now)
   initialized = 1;
   signal(SIGFPE, SIG_IGN);
@@ -101,6 +102,55 @@ int libpd_init(void) {
   return 0;
 }
 
+static void libpd_free_audiobufs(t_pdinstance *x) {
+  size_t n;
+  pd_setinstance(x);
+  if (STUFF->st_soundin) {
+    n = STUFF->st_inchannels * DEFDACBLKSIZE;
+    freebytes(STUFF->st_soundin, n * sizeof(t_sample));
+    STUFF->st_soundin = 0;
+  }
+  if (STUFF->st_soundout) {
+    n = STUFF->st_outchannels * DEFDACBLKSIZE;
+    freebytes(STUFF->st_soundout, n * sizeof(t_sample));
+    STUFF->st_soundout = 0;
+  }
+}
+
+void libpd_term(void) {
+  t_pdinstance *x;
+  t_class *c;
+
+  if (!initialized) return;
+
+  while (pd_ninstances > 1) {   /* free instances other than main */
+    x = pd_instances[0];
+    if (x == &pd_maininstance)
+      x = pd_instances[1];
+    libpd_free_audiobufs(x);
+    pdinstance_free(x);
+    freebytes(x, sizeof(*x));
+  }
+
+  x = &pd_maininstance;  /* work on the main instance */
+  libpd_free_audiobufs(x);
+  pd_setinstance(x);
+  pdinstance_free(x);
+  memset(&pd_maininstance, 0, sizeof(pd_maininstance));
+  freebytes(pd_instances, 0);  /* free the instance list */
+  pd_instances = 0;
+
+  while ((c = class_list)) {  /* free the classes */
+    class_list = c->c_next;
+    freebytes(c->c_methods, 0);
+    freebytes(c, sizeof(*c));
+  }
+
+  free(argv);
+  argv = 0;
+  initialized = 0;
+}
+
 void libpd_clear_search_path(void) {
   namelist_free(STUFF->st_searchpath);
   STUFF->st_searchpath = NULL;
@@ -139,21 +189,17 @@ int libpd_init_audio(int inChans, int outChans, int sampleRate) {
 }
 
 int libpd_process_raw(const float *inBuffer, float *outBuffer) {
-  t_sample *soundin = get_sys_soundin();
-  t_sample *soundout = get_sys_soundout();
-  int inchannels = sys_get_inchannels();
-  int outchannels = sys_get_outchannels();
-  size_t n_in = inchannels * DEFDACBLKSIZE;
-  size_t n_out = outchannels * DEFDACBLKSIZE;
+  size_t n_in = STUFF->st_inchannels * DEFDACBLKSIZE;
+  size_t n_out = STUFF->st_outchannels * DEFDACBLKSIZE;
   t_sample *p;
   size_t i;
   sys_microsleep(0);
-  for (p = soundin, i = 0; i < n_in; i++) {
+  for (p = STUFF->st_soundin, i = 0; i < n_in; i++) {
     *p++ = *inBuffer++;
   }
-  memset(soundout, 0, n_out * sizeof(t_sample));
+  memset(STUFF->st_soundout, 0, n_out * sizeof(t_sample));
   SCHED_TICK(sys_time + sys_time_per_dsp_tick);
-  for (p = soundout, i = 0; i < n_out; i++) {
+  for (p = STUFF->st_soundout, i = 0; i < n_out; i++) {
     *outBuffer++ = *p++;
   }
   return 0;
@@ -163,22 +209,20 @@ static const t_sample sample_to_short = SHRT_MAX,
                    short_to_sample = 1.0 / (t_sample) SHRT_MAX;
 
 #define PROCESS(_x, _y) \
-  t_sample *soundin = get_sys_soundin(); \
-  t_sample *soundout = get_sys_soundout(); \
-  int inchannels = sys_get_inchannels(); \
-  int outchannels = sys_get_outchannels(); \
+  int inchannels = STUFF->st_inchannels; \
+  int outchannels = STUFF->st_outchannels; \
   int i, j, k; \
   t_sample *p0, *p1; \
   sys_microsleep(0); \
   for (i = 0; i < ticks; i++) { \
-    for (j = 0, p0 = soundin; j < DEFDACBLKSIZE; j++, p0++) { \
+    for (j = 0, p0 = STUFF->st_soundin; j < DEFDACBLKSIZE; j++, p0++) { \
       for (k = 0, p1 = p0; k < inchannels; k++, p1 += DEFDACBLKSIZE) { \
         *p1 = *inBuffer++ _x; \
       } \
     } \
-    memset(soundout, 0, outchannels*DEFDACBLKSIZE*sizeof(t_sample)); \
+    memset(STUFF->st_soundout, 0, outchannels*DEFDACBLKSIZE*sizeof(t_sample)); \
     SCHED_TICK(sys_time + sys_time_per_dsp_tick); \
-    for (j = 0, p0 = soundout; j < DEFDACBLKSIZE; j++, p0++) { \
+    for (j = 0, p0 = STUFF->st_soundout; j < DEFDACBLKSIZE; j++, p0++) { \
       for (k = 0, p1 = p0; k < outchannels; k++, p1 += DEFDACBLKSIZE) { \
         *outBuffer++ = *p1 _y; \
       } \
