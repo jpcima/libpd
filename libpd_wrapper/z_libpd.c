@@ -123,13 +123,12 @@ static void libpd_free_audiobufs(t_pdinstance *x) {
 
 void libpd_term(void) {
   t_pdinstance *x;
-  t_class *c;
+  t_class *c, *cnext;
 
   if (!initialized) return;
 
   x = &pd_maininstance;  /* terminate initialized systems */
   pd_setinstance(x);
-  pd_term_systems();
 
   while (pd_ninstances > 1) {   /* free instances other than main */
     x = pd_instances[0];
@@ -148,10 +147,10 @@ void libpd_term(void) {
   freebytes(pd_instances, 0);  /* free the instance list */
   pd_instances = 0;
 
-  while ((c = class_list)) {  /* free the classes */
-    class_list = c->c_next;
-    freebytes(c->c_methods, 0);
-    freebytes(c, sizeof(*c));
+  for (c = class_getfirst(); c;) {  /* free the classes */
+      cnext = c->c_next;
+      class_free(c);
+      c = cnext;
   }
 
   free(argv);
