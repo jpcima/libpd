@@ -78,6 +78,7 @@ Makefile options allow for conditional compilation of libpd util and pd extra ex
   - **LOCALE=true**, set the number format to the default "C" locale\*
   - **SIGFPE=true**, install a handler for the SIGFPE signal
   - **PORTAUDIO=true**, compiles libpd with portaudio support (currently JAVA jni only)
+  - **FFTW=true**, compiles libpd using fftw as the FFT implementation
 
 For example, to build libpd with both util and extra:
 
