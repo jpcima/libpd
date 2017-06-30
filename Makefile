@@ -1,14 +1,19 @@
 UNAME = $(shell uname)
 SOLIB_PREFIX = lib
 
+ifeq ($(FFTW), true)
+  FFTW_CFLAGS = $(shell pkg-config fftw3f --cflags)
+  FFTW_LDFLAGS = $(shell pkg-config fftw3f --libs)
+endif
+
 ifeq ($(UNAME), Darwin)  # Mac
   SOLIB_EXT = dylib
   PDNATIVE_SOLIB_EXT = jnilib
   PDNATIVE_PLATFORM = mac
   PDNATIVE_ARCH =
   PLATFORM_CFLAGS = -DHAVE_LIBDL -arch x86_64 -arch i386 -g \
-    -I/System/Library/Frameworks/JavaVM.framework/Headers
-  LDFLAGS = -arch x86_64 -arch i386 -dynamiclib -ldl
+    -I/System/Library/Frameworks/JavaVM.framework/Headers $(FFTW_CFLAGS)
+  LDFLAGS = -arch x86_64 -arch i386 -dynamiclib -ldl $(FFTW_LDFLAGS)
   CSHARP_LDFLAGS = $(LDFLAGS)
   CPP_FLAGS = -stdlib=libc++
   CPP_LDFLAGS = $(LDFLAGS) -stdlib=libc++
@@ -21,10 +26,10 @@ else
     PDNATIVE_PLATFORM = windows
     PDNATIVE_ARCH = $(shell $(CC) -dumpmachine | sed -e 's,-.*,,' -e 's,i[3456]86,x86,' -e 's,amd64,x86_64,')
     PLATFORM_CFLAGS = -DWINVER=0x502 -DWIN32 -D_WIN32 -DPD_INTERNAL \
-      -I"$(JAVA_HOME)/include" -I"$(JAVA_HOME)/include/win32"
+      -I"$(JAVA_HOME)/include" -I"$(JAVA_HOME)/include/win32" $(FFTW_CFLAGS)
     MINGW_LDFLAGS = -shared -Wl,--export-all-symbols -lws2_32 -lkernel32
     LDFLAGS = $(MINGW_LDFLAGS) -Wl,--output-def=libs/libpd.def \
-      -Wl,--out-implib=libs/libpd.lib
+      -Wl,--out-implib=libs/libpd.lib $(FFTW_LDFLAGS)
     CSHARP_LDFLAGS = $(MINGW_LDFLAGS) -Wl,--output-def=libs/libpdcsharp.def \
       -static-libgcc -Wl,--out-implib=libs/libpdcsharp.lib
     CPP_LDFLAGS = $(LDFLAGS)
@@ -36,8 +41,8 @@ else
     JAVA_HOME ?= /usr/lib/jvm/default-java
     PLATFORM_CFLAGS = -DHAVE_LIBDL -Wno-int-to-pointer-cast -g \
       -Wno-pointer-to-int-cast -fPIC -I"$(JAVA_HOME)/include" \
-      -I"$(JAVA_HOME)/include/linux"
-    LDFLAGS = -shared -ldl -Wl,-Bsymbolic -Wl,--no-undefined
+      -I"$(JAVA_HOME)/include/linux" $(FFTW_CFLAGS)
+    LDFLAGS = -shared -ldl -Wl,-Bsymbolic -Wl,--no-undefined $(FFTW_LDFLAGS)
     CSHARP_LDFLAGS = $(LDFLAGS)
     CPP_LDFLAGS = $(LDFLAGS)
     JAVA_LDFLAGS = $(LDFLAGS)
@@ -49,7 +54,6 @@ PDNATIVE_SOLIB_EXT ?= $(SOLIB_EXT)
 PD_FILES = \
 	pure-data/src/d_arithmetic.c pure-data/src/d_array.c pure-data/src/d_ctl.c \
 	pure-data/src/d_dac.c pure-data/src/d_delay.c pure-data/src/d_fft.c \
-	pure-data/src/d_fft_fftsg.c \
 	pure-data/src/d_filter.c pure-data/src/d_global.c pure-data/src/d_math.c \
 	pure-data/src/d_misc.c pure-data/src/d_osc.c pure-data/src/d_resample.c \
 	pure-data/src/d_soundfile.c pure-data/src/d_ugen.c \
@@ -75,6 +79,12 @@ PD_FILES = \
 	pure-data/src/x_vexp.c pure-data/src/x_vexp_if.c pure-data/src/x_vexp_fun.c \
 	libpd_wrapper/s_libpdmidi.c libpd_wrapper/x_libpdreceive.c \
 	libpd_wrapper/z_hooks.c libpd_wrapper/z_libpd.c
+
+ifeq ($(FFTW), true)
+PD_FILES += pure-data/src/d_fft_fftw.c
+else
+PD_FILES += pure-data/src/d_fft_fftsg.c
+endif
 
 PD_EXTRA_FILES = \
 	pure-data/extra/bob~/bob~.c pure-data/extra/bonk~/bonk~.c \
